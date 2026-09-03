@@ -351,6 +351,101 @@ docker compose up -d
 - **`Unsupported system page size`** — add `DISABLE_JEMALLOC: "true"` under `environment` in `compose.yaml`
 - **UI won't load** — confirm the container is running: `docker compose ps`; wait for first-boot setup to finish
 
+## Devices
+
+Smart home devices integrated via [Home Assistant](#home-assistant). The fan and Pi must be on the same LAN — local control uses the fan's Wi‑Fi IP, not the cloud.
+
+### Xiaomi Smart Tower Fan 2
+
+| | |
+| --- | --- |
+| **Product** | Xiaomi Smart Tower Fan 2 |
+| **Model** | `xiaomi.fan.p45` |
+| **SKU** | BHR8846EU |
+
+The built-in [Xiaomi Miio](https://www.home-assistant.io/integrations/xiaomi_miio/) integration does **not** support this model. Use the community [syssi/xiaomi_fan](https://github.com/syssi/xiaomi_fan) custom component instead (`xiaomi.fan.p45` support merged mid-2026).
+
+Requires Home Assistant (see [Home Assistant](#home-assistant) above). On Home Assistant Container, install [HACS](https://hacs.xyz/docs/setup/download) first if you don't have it yet.
+
+**1. Get the fan's IP and token**
+
+1. Add the fan to the **Xiaomi Home** app and connect it to your Wi‑Fi
+2. Find its LAN IP — your router's DHCP/client list, or the device info screen in the Xiaomi Home app
+3. Get the 32-character API token — follow [Retrieving the Access Token](https://www.home-assistant.io/integrations/xiaomi_miio/#retrieving-the-access-token) (e.g. [Xiaomi Cloud Tokens Extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor))
+
+Store the token in `~/homeassistant/config/secrets.yaml`:
+
+```yaml
+tower_fan_token: YOUR_32_CHAR_TOKEN
+```
+
+**2. Install the custom component**
+
+Via HACS (recommended):
+
+1. Open Home Assistant → **HACS** → **Integrations**
+2. Search for **Xiaomi Mi Smart Pedestal Fan Integration** and install
+3. Restart Home Assistant
+
+Manual install (if HACS is not set up):
+
+```bash
+cd ~/homeassistant/config/custom_components
+git clone https://github.com/syssi/xiaomi_fan.git /tmp/xiaomi_fan
+cp -r /tmp/xiaomi_fan/custom_components/xiaomi_miio_fan .
+cd ~/homeassistant && docker compose restart
+```
+
+**3. Configure**
+
+Add to `~/homeassistant/config/configuration.yaml`:
+
+```yaml
+fan:
+  - platform: xiaomi_miio_fan
+    name: Tower Fan 2
+    host: 192.168.X.X          # fan's LAN IP
+    token: !secret tower_fan_token
+    model: xiaomi.fan.p45      # required — do not omit
+```
+
+The `model:` line is required. Without it the integration won't use the correct profile. Some devices report `dmaker.fan.p45` in logs — configure as `xiaomi.fan.p45`.
+
+Restart Home Assistant:
+
+```bash
+cd ~/homeassistant && docker compose restart
+```
+
+The fan appears as `fan.tower_fan_2` (entity ID derived from the name).
+
+**4. Controls**
+
+From the Home Assistant UI:
+
+- Power on/off
+- Speed (1–100%)
+- Preset modes (Level 1–4, Natural 1–4, Sleep)
+- Oscillation on/off
+
+Extra options (child lock, LED, buzzer, swing angle, off-delay timer) use [platform services](https://github.com/syssi/xiaomi_fan#platform-services) — e.g. in **Developer tools** → **Actions**:
+
+```yaml
+action: xiaomi_miio_fan.fan_set_oscillation_angle
+target:
+  entity_id: fan.tower_fan_2
+data:
+  angle: 90
+```
+
+Swing angles: 30, 60, 90, 120, 150 degrees.
+
+**Troubleshooting**
+
+- **`Unsupported device found! ... dmaker.fan.p45`** — set `model: xiaomi.fan.p45` in `configuration.yaml` and update the custom component to the latest `syssi/xiaomi_fan` release
+- **Entity unavailable** — confirm the fan IP hasn't changed (DHCP reservation recommended); verify the token is correct
+- **Integration missing after restart** — check `~/homeassistant/config/custom_components/xiaomi_miio_fan/` exists and review logs: `docker compose logs homeassistant`
+
 ## Plans
 
 - [Nextcloud](https://nextcloud.com/)
