@@ -46,19 +46,24 @@ mkdir -p ~/.1password && ln -sf ~/Library/Group\ Containers/2BUA8C4S2C.com.1pass
 
 1. In 1Password, open your SSH Key item and copy the **public key** (or download it)
 2. Save it on your Mac as `~/.ssh/homelab-rpi.pub`
-3. On the Pi, add it to `~/.ssh/authorized_keys`:
+3. Add a temporary host entry for password-only login (the 1Password agent would otherwise offer keys and hit `MaxAuthTries`):
 
-```bash
-mkdir -p ~/.ssh && chmod 700 ~/.ssh
-echo "<paste-public-key-here>" >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
+```
+Host password-auth-ssh
+  HostName <pi-ip>
+  User pi
+  PubkeyAuthentication no
+  PreferredAuthentications password
+  IdentitiesOnly yes
 ```
 
-If password login still works, you can do this from the Mac instead:
+4. Copy the public key to the Pi:
 
 ```bash
-ssh-copy-id -i ~/.ssh/homelab-rpi.pub pi@<pi-ip>
+ssh-copy-id -i ~/.ssh/homelab-rpi.pub password-auth-ssh
 ```
+
+Enter the Pi user password when prompted. You can remove the `password-auth-ssh` block from `~/.ssh/config` after key login works.
 
 **4. Add a host entry on macOS**
 
