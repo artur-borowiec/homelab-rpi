@@ -14,8 +14,8 @@ Used [Raspberry Pi Imager](https://www.raspberrypi.com/software/) on macOS to wr
 
 ### Initial setup
 
-- SSH access
-- [Tailscale](https://tailscale.com/)
+- SSH access — see [SSH access (macOS + 1Password)](#ssh-access-macos--1password) below
+- [Tailscale](https://tailscale.com/) — see [Tailscale](#tailscale) below
 
 #### SSH access (macOS + 1Password)
 
@@ -129,6 +129,57 @@ ssh homelab-rpi
 ssh-add -l
 ```
 
+#### Tailscale
+
+[Tailscale](https://tailscale.com/) runs on the Pi host (not in Docker) so the node joins your tailnet with a stable `100.x.x.x` address and MagicDNS hostname. Set up SSH first — you need LAN access to install and authenticate Tailscale.
+
+**1. Install on the Pi**
+
+SSH in (`ssh homelab-rpi`), then:
+
+```bash
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+```
+
+Open the auth URL in your browser and approve the Pi. Confirm it joined the tailnet:
+
+```bash
+tailscale status
+```
+
+Note the Pi's MagicDNS name (e.g. `raspberrypi.<tailnet>.ts.net`).
+
+**2. Add a host entry on macOS**
+
+Add a second SSH alias for remote access over Tailscale. Use the same key as `homelab-rpi`:
+
+```
+Host homelab-rpi-ts
+  HostName raspberrypi.<tailnet>.ts.net
+  User pi
+  IdentityFile ~/.ssh/homelab-rpi.pub
+  IdentitiesOnly yes
+  IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+```
+
+Replace `<tailnet>` with your tailnet suffix from `tailscale status`.
+
+**3. Connect**
+
+```bash
+ssh homelab-rpi-ts
+```
+
+Accept the new host key on first connect (or pre-add it with `ssh-keyscan -H raspberrypi.<tailnet>.ts.net >> ~/.ssh/known_hosts`).
+
+| Host | When to use |
+| --- | --- |
+| `homelab-rpi` | On your home LAN |
+| `homelab-rpi-ts` | Anywhere via Tailscale |
+
+Install the [Tailscale app](https://tailscale.com/download) on your Mac too — SSH over Tailscale requires your Mac to be on the same tailnet.
+
 ## Tools
 
 - [CUPS](https://www.cups.org/) — print server
@@ -143,7 +194,7 @@ Install on the Pi:
 ```bash
 sudo apt update && sudo apt install -y cups avahi-daemon
 sudo usermod -aG lpadmin $USER
-sudo cupsctl --remote-admin --remote-any --share-printers
+sudo cupsctl --remote-admin --remote-any --share-printers WebInterface=yes
 sudo systemctl enable --now cups avahi-daemon
 ```
 
@@ -154,6 +205,25 @@ Log out and back in (or reconnect SSH) so the `lpadmin` group applies.
 3. **Administration** → **Add Printer** → pick the printer, install the driver, enable **Share This Printer**
 
 `avahi-daemon` advertises shared printers on the LAN (AirPrint/Bonjour on Apple devices). For HP printers, install `hplip` if CUPS does not detect the model: `sudo apt install -y hplip`.
+
+**Admin UI won't open from the Mac**
+
+If `https://raspberrypi.local:631` (or `https://<pi-ip>:631`) fails with *connection refused*, CUPS is probably installed but not running, or not listening on the network. If the port is open but the page is blank or missing **Administration**, the web UI may be disabled — `WebInterface=yes` enables it. On the Pi:
+
+```bash
+sudo systemctl enable --now cups avahi-daemon
+sudo usermod -aG lpadmin $USER
+sudo cupsctl --remote-admin --remote-any --share-printers WebInterface=yes
+sudo systemctl restart cups
+```
+
+Confirm CUPS is listening on port 631:
+
+```bash
+ss -tlnp | grep 631
+```
+
+Then retry from the Mac. Browsers warn about CUPS's self-signed HTTPS certificate — proceed anyway. If `raspberrypi.local` is slow or fails, use the Pi IP directly (e.g. `https://192.168.100.25:631`).
 
 ## Docker
 
