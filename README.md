@@ -254,8 +254,104 @@ sudo usermod -aG docker $USER
 
 Log out and back in so the `docker` group applies. Optionally install [Docker Compose](https://docs.docker.com/compose/install/) (included with recent Docker Engine packages).
 
+### Home Assistant
+
+Runs in Docker as [Home Assistant Container](https://www.home-assistant.io/installation/linux#install-home-assistant-container) — the official image on your existing Raspberry Pi OS. This is not [Home Assistant OS](https://www.home-assistant.io/installation/raspberrypi) (a full replacement OS; official minimum is 2 GB RAM).
+
+Home Assistant Container runs **Core only** — no Supervisor or one-click add-ons. Extra tools (Zigbee2MQTT, Node-RED, etc.) run as separate containers if needed later.
+
+Requires Docker (see [Setup](#setup-1) above). On a Pi 3B with 1 GB RAM, run Home Assistant alone first; add Nextcloud only after HA is stable.
+
+**1. Create config directory**
+
+On the Pi:
+
+```bash
+mkdir -p ~/homeassistant/config
+```
+
+**2. Create `compose.yaml`**
+
+Create `~/homeassistant/compose.yaml`:
+
+```yaml
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - ./config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    restart: unless-stopped
+    stop_grace_period: 60s
+    privileged: true
+    network_mode: host
+    environment:
+      TZ: Europe/Warsaw
+```
+
+- `network_mode: host` — required for mDNS and local device discovery
+- `privileged: true` — needed for USB serial adapters (Zigbee/Z-Wave)
+- `/run/dbus` — optional; required for the Bluetooth integration
+- `stop_grace_period: 60s` — lets SQLite shut down cleanly on restart
+
+**3. Start**
+
+```bash
+cd ~/homeassistant
+docker compose up -d
+```
+
+First boot can take several minutes on a Pi 3B. Watch logs:
+
+```bash
+docker compose logs -f homeassistant
+```
+
+**4. Open the UI**
+
+Home Assistant listens on port **8123**.
+
+| From | URL |
+| --- | --- |
+| LAN | `http://<pi-ip>:8123` or `http://raspberrypi.local:8123` |
+| Tailscale | `http://raspberrypi.<tailnet>.ts.net:8123` |
+
+Complete [onboarding](https://www.home-assistant.io/getting-started/onboarding/) in the browser.
+
+**USB Zigbee / Z-Wave dongle (optional)**
+
+Find the device on the Pi:
+
+```bash
+ls -l /dev/serial/by-id/
+```
+
+Add to `compose.yaml` under the service:
+
+```yaml
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+```
+
+Use the path from `by-id` if possible. Add your user to the `dialout` group: `sudo usermod -aG dialout $USER` (reconnect SSH afterward).
+
+**Updates**
+
+```bash
+cd ~/homeassistant
+docker compose pull
+docker compose up -d
+```
+
+**Troubleshooting**
+
+- **Slow or OOM on Pi 3B** — check `free -h`; consider enabling swap or running fewer integrations
+- **`Unsupported system page size`** — add `DISABLE_JEMALLOC: "true"` under `environment` in `compose.yaml`
+- **UI won't load** — confirm the container is running: `docker compose ps`; wait for first-boot setup to finish
+
 ## Plans
 
-- [Home Assistant](https://www.home-assistant.io/)
 - [Nextcloud](https://nextcloud.com/)
 - [PostgreSQL](https://www.postgresql.org/) — in Docker, as the database for Nextcloud (and other services later)
