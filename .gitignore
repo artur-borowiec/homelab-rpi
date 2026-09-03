@@ -1,0 +1,3 @@
+tools/xiaomi-cloud-tokens-extractor/app/
+tools/xiaomi-cloud-tokens-extractor/.venv/
+tools/xiaomi-cloud-tokens-extractor/*.zip

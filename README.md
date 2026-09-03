@@ -184,6 +184,7 @@ Install the [Tailscale app](https://tailscale.com/download) on your Mac too — 
 
 - [CUPS](https://www.cups.org/) — print server
 - [Docker](https://www.docker.com/) — see [Docker](#docker) below
+- [Xiaomi Cloud Tokens Extractor](#xiaomi-cloud-tokens-extractor) — macOS tool in `tools/` for Xiaomi device tokens
 
 ### CUPS
 
@@ -370,10 +371,21 @@ Requires Home Assistant (see [Home Assistant](#home-assistant) above). On Home A
 **1. Get the fan's IP and token**
 
 1. Add the fan to the **Xiaomi Home** app and connect it to your Wi‑Fi
-2. Find its LAN IP — your router's DHCP/client list, or the device info screen in the Xiaomi Home app
-3. Get the 32-character API token — follow [Retrieving the Access Token](https://www.home-assistant.io/integrations/xiaomi_miio/#retrieving-the-access-token) (e.g. [Xiaomi Cloud Tokens Extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor))
+2. On your Mac, from this repo:
 
-Store the token in `~/homeassistant/config/secrets.yaml`:
+```bash
+cd tools/xiaomi-cloud-tokens-extractor
+./install.sh    # once
+./run.sh
+```
+
+3. Log in (Xiaomi account password or QR code)
+4. Select server region when prompted — `de` for EU
+5. In the device list, find the Tower Fan 2 and copy its **IP address** and **token** (32 characters)
+
+See [Xiaomi Cloud Tokens Extractor](#xiaomi-cloud-tokens-extractor) for details.
+
+Store the token in `~/homeassistant/config/secrets.yaml` on the Pi:
 
 ```yaml
 tower_fan_token: YOUR_32_CHAR_TOKEN
@@ -404,7 +416,7 @@ Add to `~/homeassistant/config/configuration.yaml`:
 fan:
   - platform: xiaomi_miio_fan
     name: Tower Fan 2
-    host: 192.168.X.X          # fan's LAN IP
+    host: 192.168.X.X          # IP from token extractor output
     token: !secret tower_fan_token
     model: xiaomi.fan.p45      # required — do not omit
 ```
@@ -445,6 +457,53 @@ Swing angles: 30, 60, 90, 120, 150 degrees.
 - **`Unsupported device found! ... dmaker.fan.p45`** — set `model: xiaomi.fan.p45` in `configuration.yaml` and update the custom component to the latest `syssi/xiaomi_fan` release
 - **Entity unavailable** — confirm the fan IP hasn't changed (DHCP reservation recommended); verify the token is correct
 - **Integration missing after restart** — check `~/homeassistant/config/custom_components/xiaomi_miio_fan/` exists and review logs: `docker compose logs homeassistant`
+
+### Xiaomi Cloud Tokens Extractor
+
+Retrieves API tokens and LAN IPs for Xiaomi cloud devices. Needed for the Tower Fan 2 — the built-in Home Assistant Xiaomi Miio integration cannot discover tokens on its own.
+
+Upstream: [PiotrMachowski/Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor). Wrapped in this repo at `tools/xiaomi-cloud-tokens-extractor/` (scripts + venv; upstream code downloaded to gitignored `app/` on install).
+
+Run on your **Mac** — QR-code login works best in a local terminal. Requires Python 3.
+
+**Install** (once)
+
+```bash
+cd tools/xiaomi-cloud-tokens-extractor
+./install.sh
+```
+
+Downloads the latest upstream release and creates `.venv/`.
+
+**Run**
+
+```bash
+./run.sh
+```
+
+1. Choose login method — username/password or QR code (scan with Xiaomi Home app)
+2. Enter server region — `de` for EU, or leave empty to search all regions
+3. Browse the printed device list — each entry shows name, model, IP, and token
+
+Copy the **IP** and **token** for your fan into Home Assistant config (see [Xiaomi Smart Tower Fan 2](#xiaomi-smart-tower-fan-2) above).
+
+**Update**
+
+```bash
+rm -rf app .venv
+./install.sh
+```
+
+**Troubleshooting**
+
+If login fails, see [upstream troubleshooting](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor#troubleshooting):
+
+- Use QR code instead of password
+- Disable DNS ad blockers (AdGuard, Pi-hole) temporarily
+- Check spam folder for 2FA email
+- Xiaomi limits 2FA requests to a few per day per region
+
+More detail: [tools/xiaomi-cloud-tokens-extractor/README.md](tools/xiaomi-cloud-tokens-extractor/README.md).
 
 ## Plans
 
