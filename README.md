@@ -132,7 +132,28 @@ ssh-add -l
 ## Tools
 
 - [CUPS](https://www.cups.org/) — print server
-- [Docker](https://www.docker.com/)
+- [Docker](https://www.docker.com/) — see [Docker](#docker) below
+
+### CUPS
+
+Runs on the host (not in Docker) so the Pi can use USB or network printers directly.
+
+Install on the Pi:
+
+```bash
+sudo apt update && sudo apt install -y cups avahi-daemon
+sudo usermod -aG lpadmin $USER
+sudo cupsctl --remote-admin --remote-any --share-printers
+sudo systemctl enable --now cups avahi-daemon
+```
+
+Log out and back in (or reconnect SSH) so the `lpadmin` group applies.
+
+1. Plug in the printer (USB or ensure it is reachable on the network)
+2. Open the admin UI from your Mac: `https://<pi-ip>:631`
+3. **Administration** → **Add Printer** → pick the printer, install the driver, enable **Share This Printer**
+
+`avahi-daemon` advertises shared printers on the LAN (AirPrint/Bonjour on Apple devices). For HP printers, install `hplip` if CUPS does not detect the model: `sudo apt install -y hplip`.
 
 ## Docker
 
