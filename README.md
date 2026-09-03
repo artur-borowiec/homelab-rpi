@@ -21,6 +21,35 @@ Used [Raspberry Pi Imager](https://www.raspberrypi.com/software/) on macOS to wr
 
 SSH keys live in [1Password](https://developer.1password.com/docs/ssh/get-started). The private key never goes on disk — the 1Password SSH agent signs requests after you approve (e.g. Touch ID).
 
+**Clean up a previous setup (optional)**
+
+Do this on your Mac if you re-flashed the Pi, changed its IP, or are redoing SSH setup.
+
+1. Remove stale host keys from `~/.ssh/known_hosts`. A re-flash generates a new host key; the old one triggers `REMOTE HOST IDENTIFICATION HAS CHANGED` or ssh-copy-id asking you to fix `known_hosts`:
+
+```bash
+ssh-keygen -R <pi-ip>
+ssh-keygen -R raspberrypi.local    # if you connected by mDNS before
+```
+
+Run `ssh-keygen -R` for every hostname or IP you used for this Pi. Use the literal address (not the `Host` alias from `~/.ssh/config`).
+
+2. Edit `~/.ssh/config` and delete any old `password-auth-ssh` or `homelab-rpi` blocks from a previous attempt.
+
+3. Keep `~/.ssh/homelab-rpi.pub` if it is still the same key from 1Password. Re-export from 1Password only if you rotated the key.
+
+On a re-flashed Pi, `~/.ssh/authorized_keys` is empty — run step 3 below from scratch. If the Pi was not re-flashed, `ssh-copy-id` is safe to run again (it skips a key that is already installed).
+
+**Add the Pi host key**
+
+SSH stores each server's host key in `~/.ssh/known_hosts` on first connect. After cleanup above, add the current key before `ssh-copy-id` (or accept the prompt when SSH asks `Are you sure you want to continue connecting?`):
+
+```bash
+ssh-keyscan -H <pi-ip> >> ~/.ssh/known_hosts
+```
+
+Replace `<pi-ip>` with the Pi's address. `-H` stores a hashed hostname (recommended on macOS).
+
 **1. Enable the 1Password SSH agent (Mac)**
 
 1. Open 1Password → **Settings** → **Developer**
