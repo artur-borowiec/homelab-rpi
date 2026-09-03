@@ -385,11 +385,44 @@ cd tools/xiaomi-cloud-tokens-extractor
 
 See [Xiaomi Cloud Tokens Extractor](#xiaomi-cloud-tokens-extractor) for details.
 
-Store the token in `~/homeassistant/config/secrets.yaml` on the Pi:
+**Create `secrets.yaml` on the Pi**
+
+SSH in (`ssh homelab-rpi`), then create the secrets file in the Home Assistant config directory:
+
+```bash
+nano ~/homeassistant/config/secrets.yaml
+```
+
+Add your fan token (replace with the value from the token extractor):
 
 ```yaml
 tower_fan_token: YOUR_32_CHAR_TOKEN
 ```
+
+Save (`Ctrl+O`, Enter) and exit (`Ctrl+X`).
+
+Ensure the file is owned by your user (don't create it with `sudo`) and readable by the Home Assistant container:
+
+```bash
+chown pi:pi ~/homeassistant/config/secrets.yaml
+chmod 644 ~/homeassistant/config/secrets.yaml
+```
+
+Home Assistant loads `secrets.yaml` automatically from the config folder — no extra import in `configuration.yaml` needed. Reference secrets with `!secret key_name` (see step 3 below).
+
+If the file already exists, add `tower_fan_token` to it rather than overwriting other secrets.
+
+**`Permission denied` reading `secrets.yaml`**
+
+Home Assistant runs in Docker as a different user than your SSH session. If you see this error after `chmod 600`:
+
+```bash
+sudo chown -R pi:pi ~/homeassistant/config
+chmod 644 ~/homeassistant/config/secrets.yaml
+cd ~/homeassistant && docker compose restart
+```
+
+Do not use `chmod 600` on `secrets.yaml` — the container needs read access. The file stays off git (it lives only on the Pi).
 
 **2. Install the custom component**
 
