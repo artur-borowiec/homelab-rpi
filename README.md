@@ -17,6 +17,74 @@ Used [Raspberry Pi Imager](https://www.raspberrypi.com/software/) on macOS to wr
 - SSH access
 - [Tailscale](https://tailscale.com/)
 
+#### SSH access (macOS + 1Password)
+
+SSH keys live in [1Password](https://developer.1password.com/docs/ssh/get-started). The private key never goes on disk — the 1Password SSH agent signs requests after you approve (e.g. Touch ID).
+
+**1. Enable the 1Password SSH agent (Mac)**
+
+1. Open 1Password → **Settings** → **Developer**
+2. Turn on **Use the SSH agent**
+3. Optional: **Settings** → **General** → enable **Keep 1Password in the menu bar** and **Start at login**
+
+**2. Configure SSH on macOS**
+
+Add to `~/.ssh/config` (create the file if needed):
+
+```
+Host *
+  IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+```
+
+Optional symlink for a shorter path:
+
+```bash
+mkdir -p ~/.1password && ln -sf ~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock ~/.1password/agent.sock
+```
+
+**3. Install the public key on the Pi**
+
+1. In 1Password, open your SSH Key item and copy the **public key** (or download it)
+2. Save it on your Mac as `~/.ssh/homelab-rpi.pub`
+3. On the Pi, add it to `~/.ssh/authorized_keys`:
+
+```bash
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+echo "<paste-public-key-here>" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+If password login still works, you can do this from the Mac instead:
+
+```bash
+ssh-copy-id -i ~/.ssh/homelab-rpi.pub pi@<pi-ip>
+```
+
+**4. Add a host entry on macOS**
+
+Pin this Pi to your 1Password key (avoids "too many authentication failures" when you have many keys):
+
+```
+Host homelab-rpi
+  HostName <pi-ip>
+  User pi
+  IdentityFile ~/.ssh/homelab-rpi.pub
+  IdentitiesOnly yes
+  IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+```
+
+**5. Connect**
+
+```bash
+ssh homelab-rpi
+```
+
+1Password will prompt to authorize the key on first use. Verify the agent sees your key:
+
+```bash
+ssh-add -l
+```
+
 ## Tools
 
 - [CUPS](https://www.cups.org/) — print server
