@@ -354,6 +354,38 @@ ls ~/homeassistant/config/custom_components/hacs
 
 If HACS does not show up in **Add integration** after restart, check that the installer ran in `~/homeassistant/config` (not `~/homeassistant`) and review logs: `docker compose logs homeassistant`.
 
+#### Spook
+
+[Spook](https://spook.boo/) is a community toolbox for Home Assistant — extra actions and helpers not in core HA. In this homelab it is used to **assign YAML entities to a room (area)** when they have no `unique_id` (e.g. the Tower Fan 2 via `xiaomi_miio_fan`).
+
+Requires [HACS](#hacs).
+
+**Install**
+
+1. **HACS** → **Integrations** → search **Spook** → install
+2. Restart Home Assistant
+3. **Settings** → **Devices & services** → **Add integration** → search **Spook** → add
+
+Spook appears under **Settings** → **Devices & services** → **Integrations** when active.
+
+**Assign an entity to a room**
+
+1. Create the room: **Settings** → **Areas & zones** → **Create area** (e.g. `Living room`)
+2. **Developer tools** → **Actions** → action **`homeassistant.add_entity_to_area`** (provided by Spook)
+
+```yaml
+action: homeassistant.add_entity_to_area
+data:
+  area_id: "{{ area_id('Living room') }}"
+  entity_id: fan.tower_fan_2
+```
+
+Replace `'Living room'` with your area name exactly as shown in **Areas & zones**. Run once — the assignment persists across restarts.
+
+Confirm under **Settings** → **Areas & zones** → your area → the entity is listed.
+
+Spook adds many other actions (labels, bulk area changes, etc.) — see [Spook documentation](https://spook.boo/).
+
 **USB Zigbee / Z-Wave dongle (optional)**
 
 Find the device on the Pi:
@@ -492,6 +524,26 @@ cd ~/homeassistant && docker compose restart
 ```
 
 The fan appears as **`fan.tower_fan_2`** (entity ID derived from the name). Find it under **Settings** → **Devices & services** → **Entities** (search `tower`), or add it to the **Overview** dashboard from **Settings** → **Dashboards**.
+
+**No unique ID / settings not editable in UI**
+
+If Home Assistant shows that `fan.tower_fan_2` has no unique identifier — this is **expected**, not a setup error. The [syssi/xiaomi_fan](https://github.com/syssi/xiaomi_fan) YAML integration only assigns a `unique_id` when it auto-detects the model. Because `model: xiaomi.fan.p45` must be set explicitly, the entity has no `unique_id` and you cannot rename it or assign a room from **Settings** → **Entities**.
+
+The fan still works — control it from the dashboard, automations, and **Developer tools** → **Actions**.
+
+**Assign to a room** — use [Spook](#spook): `homeassistant.add_entity_to_area` with `entity_id: fan.tower_fan_2`. The normal area picker in entity settings does not work without a `unique_id`.
+
+To set a friendly name or icon, add to `configuration.yaml`:
+
+```yaml
+homeassistant:
+  customize:
+    fan.tower_fan_2:
+      friendly_name: Tower Fan 2
+      icon: mdi:fan
+```
+
+Restart Home Assistant after editing. To change the entity ID itself, change the `name:` in the `fan:` platform block (before first setup) — it cannot be renamed from the UI later.
 
 **4. Controls**
 
