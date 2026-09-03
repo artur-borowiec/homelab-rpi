@@ -67,10 +67,10 @@ Host password-auth-ssh
 - `PreferredAuthentications password` — use password auth only
 - `IdentitiesOnly yes` — ignore keys from the 1Password agent
 
-4. Copy the public key to the Pi:
+4. Copy the public key to the Pi. The private key lives in 1Password, not on disk, so pass `-f` to tell `ssh-copy-id` to use the `.pub` file alone:
 
 ```bash
-ssh-copy-id -i ~/.ssh/homelab-rpi.pub password-auth-ssh
+ssh-copy-id -f -i ~/.ssh/homelab-rpi.pub password-auth-ssh
 ```
 
 Enter the Pi user password when prompted. You can remove the `password-auth-ssh` block from `~/.ssh/config` after key login works.
