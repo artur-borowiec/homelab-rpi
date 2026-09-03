@@ -321,6 +321,37 @@ Home Assistant listens on port **8123**.
 
 Complete [onboarding](https://www.home-assistant.io/getting-started/onboarding/) in the browser.
 
+#### HACS
+
+[HACS](https://hacs.xyz/) (Home Assistant Community Store) is required for community integrations such as the Xiaomi fan. Home Assistant Container has no add-on store — install HACS manually. You need a free [GitHub](https://github.com/) account.
+
+SSH in (`ssh homelab-rpi`), then run the installer **from the config directory** (the folder mounted as `/config` in the container):
+
+```bash
+cd ~/homeassistant/config
+wget -O - https://get.hacs.xyz | bash -
+```
+
+Restart Home Assistant:
+
+```bash
+cd ~/homeassistant && docker compose restart
+```
+
+In the Home Assistant UI:
+
+1. **Settings** → **Devices & services** → **Add integration**
+2. Search for **HACS** and add it
+3. Accept the terms and authenticate with GitHub (create a personal access token if prompted)
+
+HACS appears in the sidebar when setup is complete. Confirm the files are present:
+
+```bash
+ls ~/homeassistant/config/custom_components/hacs
+```
+
+If HACS does not show up after restart, check that the installer ran in `~/homeassistant/config` (not `~/homeassistant`) and review logs: `docker compose logs homeassistant`.
+
 **USB Zigbee / Z-Wave dongle (optional)**
 
 Find the device on the Pi:
@@ -366,7 +397,7 @@ Smart home devices integrated via [Home Assistant](#home-assistant). The fan and
 
 The built-in [Xiaomi Miio](https://www.home-assistant.io/integrations/xiaomi_miio/) integration does **not** support this model. Use the community [syssi/xiaomi_fan](https://github.com/syssi/xiaomi_fan) custom component instead (`xiaomi.fan.p45` support merged mid-2026).
 
-Requires Home Assistant (see [Home Assistant](#home-assistant) above). On Home Assistant Container, install [HACS](https://hacs.xyz/docs/setup/download) first if you don't have it yet.
+Requires Home Assistant (see [Home Assistant](#home-assistant) above). Install [HACS](#hacs) first — the fan integration is not in the official store.
 
 **1. Get the fan's IP and token**
 
