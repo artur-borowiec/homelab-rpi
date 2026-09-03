@@ -167,7 +167,8 @@ Application services run in Docker where it makes sense; system-level tools stay
 | Tailscale | No | Install on the host for node-level VPN |
 | CUPS | No | Needs direct USB/network printer access; native install is simpler |
 | Home Assistant | Yes | Well supported via official container image |
-| Nextcloud | Yes | Typical stack: Nextcloud + database (MariaDB/PostgreSQL) via Compose |
+| Nextcloud | Yes | Typical stack: Nextcloud + database via Compose |
+| PostgreSQL | Yes | Shared database for Nextcloud and other apps |
 
 The Pi 3B has only 1 GB RAM. Running Home Assistant and Nextcloud together in Docker can be tight — consider starting with one service first, or set memory limits on containers.
 
@@ -187,3 +188,4 @@ Log out and back in so the `docker` group applies. Optionally install [Docker Co
 
 - [Home Assistant](https://www.home-assistant.io/)
 - [Nextcloud](https://nextcloud.com/)
+- [PostgreSQL](https://www.postgresql.org/) — in Docker, as the database for Nextcloud (and other services later)
