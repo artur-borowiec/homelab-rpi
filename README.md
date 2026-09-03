@@ -344,13 +344,15 @@ In the Home Assistant UI:
 2. Search for **HACS** and add it
 3. Accept the terms and authenticate with GitHub (create a personal access token if prompted)
 
-HACS appears in the sidebar when setup is complete. Confirm the files are present:
+When setup is complete, **HACS** appears in the **left sidebar** (not before — the install script alone only adds files under `custom_components/`). Open it to browse **Integrations**, **Frontend**, etc.
+
+Confirm the files are present on the Pi:
 
 ```bash
 ls ~/homeassistant/config/custom_components/hacs
 ```
 
-If HACS does not show up after restart, check that the installer ran in `~/homeassistant/config` (not `~/homeassistant`) and review logs: `docker compose logs homeassistant`.
+If HACS does not show up in **Add integration** after restart, check that the installer ran in `~/homeassistant/config` (not `~/homeassistant`) and review logs: `docker compose logs homeassistant`.
 
 **USB Zigbee / Z-Wave dongle (optional)**
 
@@ -397,7 +399,7 @@ Smart home devices integrated via [Home Assistant](#home-assistant). The fan and
 
 The built-in [Xiaomi Miio](https://www.home-assistant.io/integrations/xiaomi_miio/) integration does **not** support this model. Use the community [syssi/xiaomi_fan](https://github.com/syssi/xiaomi_fan) custom component instead (`xiaomi.fan.p45` support merged mid-2026).
 
-Requires Home Assistant (see [Home Assistant](#home-assistant) above). Install [HACS](#hacs) first — the fan integration is not in the official store.
+Requires Home Assistant and [HACS](#hacs) (sidebar entry visible after HACS integration setup). Setup order: token → `secrets.yaml` → install integration via HACS → `configuration.yaml` → restart.
 
 **1. Get the fan's IP and token**
 
@@ -457,11 +459,7 @@ Do not use `chmod 600` on `secrets.yaml` — the container needs read access. Th
 
 **2. Install the custom component**
 
-Via HACS (recommended):
-
-1. Open Home Assistant → **HACS** → **Integrations**
-2. Search for **Xiaomi Mi Smart Pedestal Fan Integration** and install
-3. Restart Home Assistant
+In Home Assistant, open **HACS** from the left sidebar → **Integrations** → search **Xiaomi Mi Smart Pedestal Fan Integration** → install → restart Home Assistant.
 
 Manual install (if HACS is not set up):
 
@@ -493,7 +491,7 @@ Restart Home Assistant:
 cd ~/homeassistant && docker compose restart
 ```
 
-The fan appears as `fan.tower_fan_2` (entity ID derived from the name).
+The fan appears as **`fan.tower_fan_2`** (entity ID derived from the name). Find it under **Settings** → **Devices & services** → **Entities** (search `tower`), or add it to the **Overview** dashboard from **Settings** → **Dashboards**.
 
 **4. Controls**
 
